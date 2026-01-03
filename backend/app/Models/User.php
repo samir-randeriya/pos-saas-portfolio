@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role_id'
     ];
 
     /**
@@ -42,4 +43,33 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function getPlanNameAttribute()
+    {
+        return optional($this->subscription?->plan)->name ?? 'none';
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        if (!$this->subscription) {
+            return false;
+        }
+
+        if (!$this->subscription->isActive()) {
+            $this->subscription->update(['status' => 'expired']);
+            return false;
+        }
+
+        return true;
+    }
 }
