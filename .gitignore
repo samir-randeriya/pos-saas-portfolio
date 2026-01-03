@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Laravel
+/vendor/
+.env
+.env.*
+storage/*.key
+storage/logs/
+storage/framework/
+bootstrap/cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
