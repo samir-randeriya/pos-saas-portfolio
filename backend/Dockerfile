@@ -39,21 +39,25 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # -------------------------
 WORKDIR /var/www/html
 
-# 🚨 IMPORTANT: Railway build context is repo root
+# Copy composer files first (Railway build context = repo root)
 COPY backend/composer.json ./composer.json
 COPY backend/composer.lock* ./
 
-# Install PHP dependencies
+# ⛔ IMPORTANT: disable scripts here
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
-    --prefer-dist
+    --prefer-dist \
+    --no-scripts
 
-# Copy rest of backend application
+# Copy full Laravel application
 COPY backend/ ./
 
-# Fix permissions
+# ✅ Now run Laravel scripts when artisan exists
+RUN composer dump-autoload --optimize
+
+# Permissions
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
