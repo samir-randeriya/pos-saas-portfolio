@@ -18,9 +18,18 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-avail
  && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 WORKDIR /var/www/html
+
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock* ./
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Copy the rest of the application
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader
+# Run post-install scripts
+RUN composer dump-autoload --optimize
 
 RUN chown -R www-data:www-data /var/www/html
 RUN a2enmod rewrite
