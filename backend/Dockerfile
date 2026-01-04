@@ -17,6 +17,13 @@ RUN docker-php-ext-install \
     mbstring exif pcntl bcmath gd
 
 # -------------------------
+# Fix Apache MPM conflict
+# -------------------------
+# Disable mpm_event and enable mpm_prefork (required for mod_php)
+RUN a2dismod mpm_event \
+ && a2enmod mpm_prefork
+
+# -------------------------
 # Enable Apache rewrite
 # -------------------------
 RUN a2enmod rewrite
