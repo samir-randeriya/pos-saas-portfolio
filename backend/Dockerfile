@@ -17,11 +17,10 @@ RUN docker-php-ext-install \
     mbstring exif pcntl bcmath gd
 
 # -------------------------
-# Fix Apache MPM conflict
+# Fix Apache MPM conflict (Railway)
 # -------------------------
-# Disable mpm_event and enable mpm_prefork (required for mod_php)
-RUN a2dismod mpm_event \
- && a2enmod mpm_prefork
+RUN a2dismod mpm_event mpm_worker \
+    && a2enmod mpm_prefork rewrite
 
 # -------------------------
 # Enable Apache rewrite
