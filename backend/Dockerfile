@@ -17,10 +17,12 @@ RUN docker-php-ext-install \
     mbstring exif pcntl bcmath gd
 
 # -------------------------
-# Fix Apache MPM conflict (Railway)
+# Force ONLY mpm_prefork
 # -------------------------
-RUN a2dismod mpm_event mpm_worker \
-    && a2enmod mpm_prefork rewrite
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.conf \
+    && rm -f /etc/apache2/mods-enabled/mpm_*.load \
+    && ln -s /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf \
+    && ln -s /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load
 
 # -------------------------
 # Enable Apache rewrite
@@ -45,11 +47,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # -------------------------
 WORKDIR /var/www/html
 
-# Copy composer files first (Railway build context = repo root)
 COPY backend/composer.json ./composer.json
 COPY backend/composer.lock* ./
 
-# ⛔ IMPORTANT: disable scripts here
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
@@ -57,13 +57,13 @@ RUN composer install \
     --prefer-dist \
     --no-scripts
 
-# Copy full Laravel application
 COPY backend/ ./
 
-# ✅ Now run Laravel scripts when artisan exists
-RUN composer dump-autoload --optimize
-
-# Permissions
-RUN chown -R www-data:www-data /var/www/html
+RUN composer dump-autoload --optimize \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
 EXPOSE 80
+
+CMD ["apache2-foreground"]
