@@ -39,8 +39,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # -------------------------
 WORKDIR /var/www/html
 
-# Copy composer files FIRST (important for caching)
-COPY composer.json composer.lock* ./
+# 🚨 IMPORTANT: Railway build context is repo root
+COPY backend/composer.json ./composer.json
+COPY backend/composer.lock* ./
 
 # Install PHP dependencies
 RUN composer install \
@@ -49,13 +50,10 @@ RUN composer install \
     --no-interaction \
     --prefer-dist
 
-# Copy the rest of the application
-COPY . .
+# Copy rest of backend application
+COPY backend/ ./
 
 # Fix permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# -------------------------
-# Expose port
-# -------------------------
 EXPOSE 80
