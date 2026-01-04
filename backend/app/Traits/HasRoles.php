@@ -1,0 +1,2 @@
+// HasRoles Trait
+

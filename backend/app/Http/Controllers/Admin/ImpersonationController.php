@@ -15,7 +15,7 @@ class ImpersonationController extends Controller
         $admin = $request->user();
         $user = User::findOrFail($userId);
 
-        if ($admin->role->name !== 'admin') {
+        if (!$admin->role || $admin->role->name !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

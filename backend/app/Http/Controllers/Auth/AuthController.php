@@ -22,7 +22,16 @@ class AuthController extends Controller
         ]);
 
         $clientRole = Role::where('name', 'client')->first();
+        
+        if (!$clientRole) {
+            return response()->json(['message' => 'Client role not found. Please run database seeders.'], 500);
+        }
+        
         $freePlan = Plan::where('name', 'free')->first();
+        
+        if (!$freePlan) {
+            return response()->json(['message' => 'Free plan not found. Please run database seeders.'], 500);
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -41,6 +50,9 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        
+        // Load role relationship for frontend
+        $user->load('role');
 
         return response()->json([
             'token' => $token,
@@ -56,6 +68,9 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('auth_token')->plainTextToken;
+        
+        // Load role relationship for frontend
+        $user->load('role');
 
         return response()->json([
             'token' => $token,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\PaymentController;
+use App\Http\Controllers\Webhooks\RazorpayWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,14 +32,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment
     Route::post('/payment/order', [PaymentController::class, 'createOrder']);
     Route::post('/payment/verify', [PaymentController::class, 'verify']);
+    Route::post('/subscription/request-cancel', [DashboardController::class, 'requestCancel']);
+    Route::post('/subscription/cancel-request', [DashboardController::class, 'cancelRequest']);
 
     // Impersonation
     Route::post('/impersonate/exit', [ImpersonationController::class, 'exit']);
 
-    
 });
 
 Route::middleware(['auth:sanctum', 'module:sales'])->get('/sales', fn () => []);
+
+// Webhooks
+Route::post('/webhooks/razorpay',[RazorpayWebhookController::class, 'handle']);
+
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     
@@ -51,5 +57,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     // Subscriptions
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
+    Route::post('/subscriptions/{id}/cancel', [AdminSubscriptionController::class, 'cancel']);
+    Route::get('/subscriptions/{id}/history', [AdminSubscriptionController::class, 'history']);
+    Route::post('/users/{userId}/change-plan', [AdminSubscriptionController::class, 'changePlan']);
 
 });

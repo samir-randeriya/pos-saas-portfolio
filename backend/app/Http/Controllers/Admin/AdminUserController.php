@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
@@ -14,35 +15,68 @@ class AdminUserController extends Controller
     public function index(Request $request)
     {
         $query = User::query()
-            ->with(['role', 'subscription.plan']);
+            ->with(['role'])
+            ->where('id', '!=', $request->user()->id);
 
+        /**
+         * 🔍 Search by name or email
+         */
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('email', 'like', "%{$request->search}%");
+                ->orWhere('email', 'like', "%{$request->search}%");
             });
         }
 
+        /**
+         * 📌 Filter by subscription status (clients only)
+         */
         if ($request->filled('status')) {
-            $query->whereHas('subscription', function ($q) use ($request) {
-                $q->where('status', $request->status);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('subscription', function ($sub) use ($request) {
+                    $sub->where('status', $request->status);
+                })
+                ->orWhereDoesntHave('subscription'); // include admins
             });
         }
 
+        /**
+         * 📦 Filter by plan (clients only)
+         */
         if ($request->filled('plan')) {
-            $query->whereHas('subscription.plan', function ($q) use ($request) {
-                $q->where('name', $request->plan);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('subscription.plan', function ($sub) use ($request) {
+                    $sub->where('name', $request->plan);
+                })
+                ->orWhereDoesntHave('subscription'); // include admins
             });
         }
 
-        $query->orderBy(
-            $request->get('sort_by', 'created_at'),
-            $request->get('order', 'desc')
-        );
+        /**
+         * 🔃 Sorting (safe allowlist recommended)
+         */
+        $allowedSorts = ['created_at', 'name', 'email'];
+        $sortBy = in_array($request->get('sort_by'), $allowedSorts)
+            ? $request->get('sort_by')
+            : 'created_at';
 
-        return response()->json(
-            $query->paginate(10)
-        );
+        $order = $request->get('order') === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sortBy, $order);
+
+        $users = $query->paginate(10);
+        
+        // Load latest active subscription for each user
+        foreach ($users->items() as $user) {
+            $user->subscription = Subscription::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->whereNull('cancelled_at')
+                ->with('plan')
+                ->latest('created_at')
+                ->first();
+        }
+
+        return response()->json($users);
     }
 
     /**

@@ -16,6 +16,8 @@ class Subscription extends Model
         'start_date',
         'end_date',
         'status',
+        'cancel_requested_at',
+        'cancelled_at',
     ];
 
     protected $dates = ['start_date', 'end_date'];
@@ -34,5 +36,15 @@ class Subscription extends Model
     {
         return $this->status === 'active' &&
             Carbon::now()->between($this->start_date, $this->end_date);
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'canceled' || $this->cancelled_at !== null;
+    }
+
+    public function isCancelRequested(): bool
+    {
+        return $this->cancel_requested_at !== null;
     }
 }
